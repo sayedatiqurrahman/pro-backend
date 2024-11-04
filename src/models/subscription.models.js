@@ -7,10 +7,10 @@ const subscriptionSchema = mongoose.Schema({
     },
     channel: {
         type: Schema.Types.ObjectId,
-        ref: "Video"
+        ref: "User"
     }
 }, {
     timestamps: true
 })
 
-export const subscription = mongoose.model("subscription", subscriptionSchema)
+export const subscription = mongoose.model("Subscription", subscriptionSchema)
