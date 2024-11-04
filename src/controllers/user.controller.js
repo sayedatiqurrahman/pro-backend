@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { jwt } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 // internal imports
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
@@ -119,16 +119,16 @@ const signInUser = asyncHandler(async (req, res) => {
 
 // sign out
 const signOutUser = asyncHandler(async (req, res) => {
-    const update = await User.findByIdAndDelete(req?.user?._id, {
-        $set: {
-            refreshToken: undefined
+    const update = await User.findByIdAndUpdate(req?.user?._id, {
+        $unset: {
+            refreshToken: 1
         }
     }, { new: true }
     )
 
     res.status(200)
         .clearCookie("accessToken", options)
-        .clearCookie("refreshTOken", options)
+        .clearCookie("refreshToken", options)
         .json(new ApiResponse(200, {}, "logout successfully !!!"))
 
 })
@@ -160,7 +160,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
-    const user = User.findById(req?.user?._id)
+    const user = await User.findById(req?.user?._id)
 
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
@@ -174,7 +174,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
 // getCurrent user
 const getCurrentUser = asyncHandler(async (req, res) => {
-    res.status(200).json(new ApiResponse(200, req?.user, "current user fetched successfully !!!"))
+    return res.status(200).json(new ApiResponse(200, req?.user, "current user fetched successfully !!!"))
 })
 
 
@@ -275,11 +275,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 // get channel profile
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-    const { username } = req?.params
+    const { username } = req?.params;
 
-    if (!username?.trim()) throw new ApiError(200, "username is missing !!!")
+    if (!username?.trim()) throw new ApiError(200, "username is missing !!!");
 
-    const channel = User.aggregate([
+    const channel = await User.aggregate([
         {
             $match: {
                 username: username?.toLowerCase()
@@ -328,20 +328,18 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 channelSubscribedToCount: 1,
                 isSubscribed: 1,
                 email: 1,
-
                 avatar: 1,
-                coverImage: 1,
-
+                coverImage: 1
             }
         }
-    ])
-    // console.log("channel : ", channel)
+    ]);
 
-    if (!channel?.length) throw new ApiError(404, "channel doest not exists");
+    // Check if channel exists
+    if (!channel?.length) throw new ApiError(404, "channel does not exist");
 
-    return res.status(200).json(new ApiResponse(200, channel[0], "User channel fetched successfully"))
-
-})
+    // Return the channel data
+    return res.status(200).json(new ApiResponse(200, channel[0], "User channel fetched successfully"));
+});
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
@@ -408,5 +406,6 @@ export {
     updateUserAvatar,
     updateAccountDetails,
     updateUserCoverImage,
-    getWatchHistory
+    getWatchHistory,
+    getCurrentUser
 }
